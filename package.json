@@ -11,7 +11,8 @@
     "start": "node server/index.js",
     "backend": "nodemon server/index.js",
     "frontend": "cross-env NODE_OPTIONS=--openssl-legacy-provider npm run start --prefix client",
-    "dev": "concurrently \"npm run backend\" \"npm run frontend\""
+    "dev": "concurrently \"npm run backend\" \"npm run frontend\"",
+    "render-build": "npm install && npm install --prefix client && cross-env NODE_OPTIONS=--openssl-legacy-provider npm run build --prefix client"
   },
   "author": "John ahn",
   "license": "ISC",
