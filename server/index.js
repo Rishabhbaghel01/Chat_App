@@ -146,8 +146,8 @@ if (process.env.NODE_ENV === "production") {
   });
 }
 
-const port = process.env.PORT || 5000
+const port = process.env.PORT || 5000;
 
-server.listen(port, () => {
-  console.log(`Server Listening on ${port}`)
+server.listen(port, "0.0.0.0", () => {
+  console.log(`Server Listening on port ${port}`);
 });
