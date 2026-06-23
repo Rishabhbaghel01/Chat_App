@@ -12,6 +12,7 @@
     "backend": "nodemon server/index.js",
     "frontend": "cross-env NODE_OPTIONS=--openssl-legacy-provider npm run start --prefix client",
     "dev": "concurrently \"npm run backend\" \"npm run frontend\"",
+    "build": "npm install --prefix client && cross-env NODE_OPTIONS=--openssl-legacy-provider npm run build --prefix client",
     "render-build": "npm install && npm install --prefix client && cross-env NODE_OPTIONS=--openssl-legacy-provider npm run build --prefix client"
   },
   "author": "John ahn",
