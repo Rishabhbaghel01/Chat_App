@@ -34,8 +34,31 @@ class ChatPage extends Component {
             const messageObj = messages[0];
             if (messageObj) {
                 const messageGroupId = messageObj.group || 'general';
+                const currentUserId = this.props.user && this.props.user.userData && this.props.user.userData._id;
+                const senderId = messageObj.sender && messageObj.sender._id ? messageObj.sender._id : messageObj.sender;
+
                 if (String(messageGroupId) === String(this.state.currentGroupId)) {
                     this.props.dispatch(afterPostMessage(messages));
+                } else if (String(senderId) !== String(currentUserId)) {
+                    const senderName = messageObj.sender && messageObj.sender.name ? messageObj.sender.name : "Someone";
+                    notification.info({
+                        message: `New message from ${senderName}`,
+                        description: messageObj.message || "Sent an attachment",
+                        placement: 'bottomRight'
+                    });
+                }
+
+                if (messageGroupId !== 'general') {
+                    this.setState(prevState => {
+                        const groups = [...prevState.groups];
+                        const groupIndex = groups.findIndex(g => String(g._id) === String(messageGroupId));
+                        if (groupIndex > 0) {
+                            const groupToMove = groups.splice(groupIndex, 1)[0];
+                            groups.unshift(groupToMove);
+                            return { groups };
+                        }
+                        return null;
+                    });
                 }
             }
         });
@@ -84,7 +107,7 @@ class ChatPage extends Component {
                 this.socket.emit("joinRoom", { roomId: group._id });
 
                 return {
-                    groups: [...prevState.groups, group]
+                    groups: [group, ...prevState.groups]
                 };
             });
         });
@@ -101,7 +124,13 @@ class ChatPage extends Component {
         // Fetch groups
         axios.get('/api/chat/groups')
             .then(response => {
-                this.setState({ groups: response.data });
+                const fetchedGroups = response.data;
+                this.setState({ groups: fetchedGroups });
+                fetchedGroups.forEach(g => {
+                    if (this.socket) {
+                        this.socket.emit("joinRoom", { roomId: g._id });
+                    }
+                });
             })
             .catch(err => {
                 console.error("Failed to load groups:", err);
@@ -135,11 +164,7 @@ class ChatPage extends Component {
     }
 
     handleGroupSelect = (groupId) => {
-        const oldGroupId = this.state.currentGroupId;
         this.setState({ currentGroupId: groupId, clearChat: false }, () => {
-            if (oldGroupId && this.socket) {
-                this.socket.emit("leaveRoom", { roomId: oldGroupId });
-            }
             this.socket.emit("joinRoom", { roomId: groupId });
             this.props.dispatch(getChats(groupId));
         });
