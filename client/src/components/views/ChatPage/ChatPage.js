@@ -1,5 +1,5 @@
 import React, { Component } from 'react'
-import { Form, Icon, Input, Button, Row, Col, List, Avatar, Modal, Select, message, notification, Dropdown, Menu } from 'antd';
+import { Form, Icon, Input, Button, Row, Col, Typography, Modal, Dropdown, Menu, notification, List, Avatar, Badge, message, Select } from 'antd';
 import io from "socket.io-client";
 import { connect } from "react-redux";
 import moment from "moment";
@@ -77,8 +77,16 @@ class ChatPage extends Component {
                     this.setState(prevState => {
                         const groups = [...prevState.groups];
                         const groupIndex = groups.findIndex(g => String(g._id) === String(messageGroupId));
-                        if (groupIndex > 0) {
+                        if (groupIndex >= 0) {
                             const groupToMove = groups.splice(groupIndex, 1)[0];
+                            
+                            // If not the current group, increment local unread count
+                            if (String(messageGroupId) !== String(this.state.currentGroupId)) {
+                                if (!groupToMove.unreadCounts) groupToMove.unreadCounts = {};
+                                const currentCount = groupToMove.unreadCounts[String(currentUserId)] || 0;
+                                groupToMove.unreadCounts[String(currentUserId)] = currentCount + 1;
+                            }
+                            
                             groups.unshift(groupToMove);
                             return { groups };
                         }
@@ -196,6 +204,25 @@ class ChatPage extends Component {
 
     handleGroupSelect = (groupId) => {
         console.log("User selected group:", groupId);
+        
+        // Optimistically clear local unread count
+        const currentUserId = this.props.user && this.props.user.userData && this.props.user.userData._id;
+        if (currentUserId) {
+            this.setState(prevState => {
+                const groups = [...prevState.groups];
+                const groupIndex = groups.findIndex(g => String(g._id) === String(groupId));
+                if (groupIndex >= 0) {
+                    if (!groups[groupIndex].unreadCounts) groups[groupIndex].unreadCounts = {};
+                    groups[groupIndex].unreadCounts[String(currentUserId)] = 0;
+                }
+                return { groups };
+            });
+            // Send request to clear on backend
+            if (groupId !== 'general') {
+                axios.post(`/api/chat/groups/${groupId}/read`).catch(err => console.error(err));
+            }
+        }
+        
         this.setState({ currentGroupId: groupId, clearChat: false }, () => {
             console.log("Emitting joinRoom for:", groupId);
             this.socket.emit("joinRoom", { roomId: groupId });
@@ -536,6 +563,7 @@ class ChatPage extends Component {
                                         shape="circle" 
                                         icon="plus" 
                                         size="small" 
+                                        style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}
                                         onClick={this.showModal}
                                     />
                                 </div>
@@ -546,6 +574,11 @@ class ChatPage extends Component {
                                         .map(group => {
                                             const isSelected = this.state.currentGroupId === group._id;
                                             const isDM = group.members && group.members.length === 2;
+                                            
+                                            // Extract unread count
+                                            const currentUserId = this.props.user && this.props.user.userData && this.props.user.userData._id;
+                                            const unreadCount = group.unreadCounts && currentUserId ? (group.unreadCounts[String(currentUserId)] || 0) : 0;
+                                            
                                             const groupMenu = (
                                                 <Menu>
                                                     <Menu.Item key="leave" onClick={(e) => {
@@ -576,7 +609,9 @@ class ChatPage extends Component {
                                                 >
                                                     <div style={{ display: 'flex', alignItems: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                                         {isDM ? <Icon type="message" style={{ marginRight: '8px' }} /> : <Icon type="team" style={{ marginRight: '8px' }} />}
-                                                        {this.getGroupDisplayName(group)}
+                                                        <Badge count={unreadCount} offset={[10, 0]} dot={false} showZero={false} style={{ zIndex: 1 }}>
+                                                            {this.getGroupDisplayName(group)}
+                                                        </Badge>
                                                     </div>
                                                     <Dropdown overlay={groupMenu} trigger={['click']}>
                                                         <Icon 

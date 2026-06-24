@@ -22,7 +22,12 @@ const groupSchema = mongoose.Schema({
     hiddenBy: [{
         type: Schema.Types.ObjectId,
         ref: 'User'
-    }]
+    }],
+    unreadCounts: {
+        type: Map,
+        of: Number,
+        default: {}
+    }
 }, { timestamps: true });
 
 const Group = mongoose.model('Group', groupSchema);

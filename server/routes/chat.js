@@ -144,4 +144,21 @@ router.put('/remove-user', auth, async (req, res) => {
     }
 });
 
+router.post("/groups/:groupId/read", auth, (req, res) => {
+    Group.findById(req.params.groupId, (err, group) => {
+        if (err || !group) return res.status(400).send(err);
+        
+        // Reset unread count for current user
+        if (!group.unreadCounts) {
+            group.unreadCounts = new Map();
+        }
+        group.unreadCounts.set(String(req.user._id), 0);
+        
+        group.save((saveErr, savedGroup) => {
+            if (saveErr) return res.status(400).send(saveErr);
+            res.status(200).json({ success: true });
+        });
+    });
+});
+
 module.exports = router;

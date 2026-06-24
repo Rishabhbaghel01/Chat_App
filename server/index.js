@@ -111,6 +111,14 @@ io.on("connection", socket => {
                     restored = true;
                 }
                 
+                // Increment unread counts for all members except the sender
+                group.members.forEach(memberId => {
+                    if (String(memberId) !== String(msg.userId)) {
+                        const currentCount = group.unreadCounts.get(String(memberId)) || 0;
+                        group.unreadCounts.set(String(memberId), currentCount + 1);
+                    }
+                });
+                
                 group.updatedAt = new Date(); // bump to top
                 
                 group.save((saveErr, savedGroup) => {
