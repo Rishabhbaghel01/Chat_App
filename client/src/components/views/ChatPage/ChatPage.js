@@ -25,16 +25,16 @@ class ChatPage extends Component {
     }
 
     componentDidMount() {
-        let server = process.env.NODE_ENV === "production" ? "/" : "http://localhost:5000";
+        let server = process.env.NODE_ENV === "production" ? undefined : "http://localhost:5000";
 
-        this.socket = io(server);
+        this.socket = server ? io(server) : io();
 
         this.socket.on("Output Chat Message", messageFromBackEnd => {
             const messages = Array.isArray(messageFromBackEnd) ? messageFromBackEnd : [messageFromBackEnd];
             const messageObj = messages[0];
             if (messageObj) {
                 const messageGroupId = messageObj.group || 'general';
-                if (messageGroupId === this.state.currentGroupId) {
+                if (String(messageGroupId) === String(this.state.currentGroupId)) {
                     this.props.dispatch(afterPostMessage(messages));
                 }
             }
