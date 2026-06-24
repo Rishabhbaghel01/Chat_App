@@ -38,6 +38,7 @@ app.use('/api/chat', require('./routes/chat'));
 io.on("connection", socket => {
 
   socket.on("joinRoom", ({ roomId }) => {
+    console.log(`Socket ${socket.id} joined room: ${roomId}`);
     socket.join(roomId);
   });
 
@@ -47,6 +48,7 @@ io.on("connection", socket => {
 
   // Each user joins a personal room keyed by their userId for targeted events
   socket.on("joinUserRoom", ({ userId }) => {
+    console.log(`Socket ${socket.id} joined user room: user_${userId}`);
     if (userId) socket.join(`user_${userId}`);
   });
 
@@ -79,11 +81,13 @@ io.on("connection", socket => {
               .populate("sender")
               .exec((err, doc)=>{
                   const targetRoom = isPrivateGroup ? msg.groupId : 'general';
+                  console.log(`Emitting 'Output Chat Message' to room: ${targetRoom}`);
                   io.to(targetRoom).emit("Output Chat Message", doc);
 
                   // Also emit directly to the personal socket rooms of restored users
                   if (originalHiddenBy && originalHiddenBy.length > 0) {
                       originalHiddenBy.forEach(memberId => {
+                          console.log(`Emitting 'Output Chat Message' to personal room: user_${memberId}`);
                           io.to(`user_${memberId}`).emit("Output Chat Message", doc);
                       });
                   }

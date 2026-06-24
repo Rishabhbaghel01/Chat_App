@@ -31,10 +31,13 @@ class ChatPage extends Component {
 
         // If the socket reconnects, it loses all rooms. We must rejoin them.
         this.socket.on("connect", () => {
+            console.log("Socket connected! ID:", this.socket.id);
             if (this.state.currentGroupId) {
+                console.log("Rejoining current group room:", this.state.currentGroupId);
                 this.socket.emit("joinRoom", { roomId: this.state.currentGroupId });
             }
             if (this.state.groups && this.state.groups.length > 0) {
+                console.log("Rejoining all groups");
                 this.state.groups.forEach(g => {
                     this.socket.emit("joinRoom", { roomId: g._id });
                 });
@@ -46,6 +49,7 @@ class ChatPage extends Component {
         });
 
         this.socket.on("Output Chat Message", messageFromBackEnd => {
+            console.log("RECEIVED 'Output Chat Message':", messageFromBackEnd);
             const messages = Array.isArray(messageFromBackEnd) ? messageFromBackEnd : [messageFromBackEnd];
             const messageObj = messages[0];
             if (messageObj) {
@@ -54,9 +58,13 @@ class ChatPage extends Component {
                 const currentUserId = this.props.user && this.props.user.userData && this.props.user.userData._id;
                 const senderId = messageObj.sender && messageObj.sender._id ? messageObj.sender._id : messageObj.sender;
 
+                console.log("messageGroupId:", messageGroupId, "currentGroupId:", this.state.currentGroupId);
+                
                 if (String(messageGroupId) === String(this.state.currentGroupId)) {
+                    console.log("Dispatching afterPostMessage!");
                     this.props.dispatch(afterPostMessage(messages));
                 } else if (String(senderId) !== String(currentUserId)) {
+                    console.log("Showing notification for different room");
                     const senderName = messageObj.sender && messageObj.sender.name ? messageObj.sender.name : "Someone";
                     notification.info({
                         message: `New message from ${senderName}`,
@@ -159,10 +167,16 @@ class ChatPage extends Component {
             this.messagesEnd.scrollIntoView({ behavior: "smooth" });
         }
 
-        const prevId = prevProps.user && prevProps.user.userData && prevProps.user.userData._id;
-        const currentId = this.props.user && this.props.user.userData && this.props.user.userData._id;
-        if (currentId && currentId !== prevId && this.socket) {
-            this.socket.emit("joinUserRoom", { userId: currentId });
+        const prevUserId = prevProps.user && prevProps.user.userData && prevProps.user.userData._id;
+        const currentUserId = this.props.user && this.props.user.userData && this.props.user.userData._id;
+        
+        if (!prevUserId && currentUserId && this.socket) {
+            console.log("Auth loaded, joining user room:", currentUserId);
+            this.socket.emit("joinUserRoom", { userId: currentUserId });
+        }
+        
+        if (currentUserId && currentUserId !== prevUserId && this.socket) {
+            this.socket.emit("joinUserRoom", { userId: currentUserId });
         }
     }
 
@@ -181,7 +195,9 @@ class ChatPage extends Component {
     }
 
     handleGroupSelect = (groupId) => {
+        console.log("User selected group:", groupId);
         this.setState({ currentGroupId: groupId, clearChat: false }, () => {
+            console.log("Emitting joinRoom for:", groupId);
             this.socket.emit("joinRoom", { roomId: groupId });
             this.props.dispatch(getChats(groupId));
         });
@@ -426,6 +442,7 @@ class ChatPage extends Component {
         let type = "Text";
         let groupId = this.state.currentGroupId;
 
+        console.log("Emitting Input Chat Message:", { chatMessage, userId, userName, userImage, nowTime, type, groupId });
         this.socket.emit("Input Chat Message", {
             chatMessage,
             userId,
@@ -517,7 +534,7 @@ class ChatPage extends Component {
                                     <Button 
                                         type="primary" 
                                         shape="circle" 
-                                        icon={<Icon type="plus" />} 
+                                        icon="plus" 
                                         size="small" 
                                         onClick={this.showModal}
                                     />
