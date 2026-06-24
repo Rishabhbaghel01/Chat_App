@@ -78,6 +78,7 @@ router.get("/groups", auth, (req, res) => {
         hiddenBy: { $ne: req.user._id }
     })
     .populate("members")
+    .sort({ updatedAt: -1 })
     .exec((err, groups) => {
         if (err) return res.status(400).send(err);
         res.status(200).json(groups);

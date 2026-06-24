@@ -98,21 +98,25 @@ io.on("connection", socket => {
               const isMember = group.members.some(m => m.toString() === msg.userId);
 
               if (isMember) {
-                // If this group was hidden for any member, restore it for them
+                let originalHiddenBy = [];
+                let restored = false;
+                
                 if (group.hiddenBy && group.hiddenBy.length > 0) {
-                    const originalHiddenBy = [...group.hiddenBy];
+                    originalHiddenBy = [...group.hiddenBy];
                     group.hiddenBy = [];
-                    group.save((saveErr, savedGroup) => {
-                        if (!saveErr && io) {
-                            originalHiddenBy.forEach(memberId => {
-                                io.to(`user_${memberId}`).emit("chatRestored", { group: savedGroup });
-                            });
-                        }
-                    });
-                    proceed(isMember, originalHiddenBy);
-                } else {
-                    proceed(isMember, []);
+                    restored = true;
                 }
+                
+                group.updatedAt = new Date(); // bump to top
+                
+                group.save((saveErr, savedGroup) => {
+                    if (restored && !saveErr && io) {
+                        originalHiddenBy.forEach(memberId => {
+                            io.to(`user_${memberId}`).emit("chatRestored", { group: savedGroup });
+                        });
+                    }
+                });
+                proceed(isMember, originalHiddenBy);
               } else {
                 proceed(isMember, []);
               }
