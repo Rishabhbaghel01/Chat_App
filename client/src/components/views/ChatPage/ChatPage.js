@@ -609,17 +609,18 @@ class ChatPage extends Component {
                                                 >
                                                     <div style={{ display: 'flex', alignItems: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                                         {isDM ? <Icon type="message" style={{ marginRight: '8px' }} /> : <Icon type="team" style={{ marginRight: '8px' }} />}
-                                                        <Badge count={unreadCount} offset={[10, 0]} dot={false} showZero={false} style={{ zIndex: 1 }}>
-                                                            {this.getGroupDisplayName(group)}
-                                                        </Badge>
+                                                        <span>{this.getGroupDisplayName(group)}</span>
                                                     </div>
-                                                    <Dropdown overlay={groupMenu} trigger={['click']}>
-                                                        <Icon 
-                                                            type="ellipsis" 
-                                                            onClick={(e) => e.stopPropagation()} 
-                                                            style={{ fontSize: '16px', padding: '4px', cursor: 'pointer' }} 
-                                                        />
-                                                    </Dropdown>
+                                                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                                                        <Badge count={unreadCount} style={{ backgroundColor: '#f5222d', marginRight: '8px' }} />
+                                                        <Dropdown overlay={groupMenu} trigger={['click']}>
+                                                            <Icon 
+                                                                type="ellipsis" 
+                                                                onClick={(e) => e.stopPropagation()} 
+                                                                style={{ fontSize: '16px', padding: '4px', cursor: 'pointer' }} 
+                                                            />
+                                                        </Dropdown>
+                                                    </div>
                                                 </div>
                                             )
                                         })
