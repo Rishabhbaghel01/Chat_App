@@ -25,7 +25,7 @@ class ChatPage extends Component {
     }
 
     componentDidMount() {
-        let server = "http://localhost:5000";
+        let server = process.env.NODE_ENV === "production" ? "/" : "http://localhost:5000";
 
         this.socket = io(server);
 
