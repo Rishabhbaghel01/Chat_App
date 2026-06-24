@@ -13,8 +13,8 @@ const io = require('socket.io')(server);
 const config = require("./config/key");
 
 const mongoose = require("mongoose");
-const mongoURI = config.mongoURI.replace(/&?w=majority/i, '');
-console.log(mongoURI);
+const mongoURI = config.mongoURI ? config.mongoURI.replace(/&?w=majority/i, '') : '';
+console.log("URI provided:", mongoURI ? "Yes" : "No");
 
 const connect = mongoose.connect(mongoURI, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => console.log('MongoDB Connected...'))
