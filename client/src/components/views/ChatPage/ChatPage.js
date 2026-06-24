@@ -29,11 +29,28 @@ class ChatPage extends Component {
 
         this.socket = server ? io(server) : io();
 
+        // If the socket reconnects, it loses all rooms. We must rejoin them.
+        this.socket.on("connect", () => {
+            if (this.state.currentGroupId) {
+                this.socket.emit("joinRoom", { roomId: this.state.currentGroupId });
+            }
+            if (this.state.groups && this.state.groups.length > 0) {
+                this.state.groups.forEach(g => {
+                    this.socket.emit("joinRoom", { roomId: g._id });
+                });
+            }
+            const myId = this.props.user && this.props.user.userData && this.props.user.userData._id;
+            if (myId) {
+                this.socket.emit("joinUserRoom", { userId: myId });
+            }
+        });
+
         this.socket.on("Output Chat Message", messageFromBackEnd => {
             const messages = Array.isArray(messageFromBackEnd) ? messageFromBackEnd : [messageFromBackEnd];
             const messageObj = messages[0];
             if (messageObj) {
-                const messageGroupId = messageObj.group || 'general';
+                const rawGroupId = messageObj.group || 'general';
+                const messageGroupId = (rawGroupId && rawGroupId._id) ? rawGroupId._id : rawGroupId;
                 const currentUserId = this.props.user && this.props.user.userData && this.props.user.userData._id;
                 const senderId = messageObj.sender && messageObj.sender._id ? messageObj.sender._id : messageObj.sender;
 
